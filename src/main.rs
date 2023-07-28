@@ -1,13 +1,13 @@
-mod utils;
-mod vulkan_engine;
-mod swapchain;
+use engine::Engine;
+use gamezap::run;
+use pollster::{self, block_on};
+use sdl2;
+use wgpu;
 
-use vulkan_engine::VulkanEngine;
+mod engine;
+mod gamezap;
+mod utils;
 
 fn main() {
-    let engine = VulkanEngine::init("GameZap", 800, 600).unwrap();
-
-    engine.run();
-
-    engine.cleanup();
+    block_on( run());
 }
