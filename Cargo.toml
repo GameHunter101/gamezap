@@ -10,7 +10,5 @@ env_logger = "0.10.0"
 log = "0.4.19"
 pollster = "0.3.0"
 raw-window-handle = "0.5.2"
-# ash = "0.37.3"
 sdl2 = {git = "https://github.com/Rust-SDL2/rust-sdl2.git", features = ["raw-window-handle"]}
 wgpu = "0.17.0"
-# ash-bootstrap = {git = "https://github.com/brandonpollack23/ash-bootstrap.git"}
