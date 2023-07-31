@@ -1,10 +1,5 @@
-use na::RealField;
 use nalgebra as na;
-use sdl2::{
-    event::Event,
-    keyboard::{Keycode, Scancode},
-    mouse::MouseState,
-};
+use sdl2::{keyboard::Scancode, mouse::MouseState};
 
 pub struct Camera {
     pub position: na::Vector3<f32>,

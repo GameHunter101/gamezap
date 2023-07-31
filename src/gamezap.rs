@@ -1,4 +1,4 @@
-use std::{rc::Rc, time::Duration};
+use std::time::Duration;
 
 use sdl2::{
     event::{Event, WindowEvent},

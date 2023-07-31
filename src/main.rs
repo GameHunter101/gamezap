@@ -1,15 +1,14 @@
-use engine::Engine;
 use gamezap::run;
 use pollster::{self, block_on};
-use sdl2;
-use wgpu;
 
+mod camera;
 mod engine;
 mod gamezap;
-mod utils;
+mod model;
+mod resources;
 mod texture;
-mod camera;
+mod utils;
 
 fn main() {
-    block_on( run());
+    block_on(run());
 }
