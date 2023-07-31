@@ -7,6 +7,8 @@ use wgpu;
 mod engine;
 mod gamezap;
 mod utils;
+mod texture;
+mod camera;
 
 fn main() {
     block_on( run());

@@ -13,3 +13,10 @@ pollster = "0.3.0"
 raw-window-handle = "0.5.2"
 sdl2 = {git = "https://github.com/Rust-SDL2/rust-sdl2.git", features = ["raw-window-handle"]}
 wgpu = "0.17.0"
+anyhow = "1.0.72"
+nalgebra = "0.32.3"
+
+[dependencies.image]
+version = "0.24.6"
+default-features = false
+features = ["png", "jpeg"]

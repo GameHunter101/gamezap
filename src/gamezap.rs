@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{rc::Rc, time::Duration};
 
 use sdl2::{
     event::{Event, WindowEvent},
@@ -22,35 +22,37 @@ pub async fn run() {
 
     let mut engine = Engine::new(&window).await;
 
-    // canvas.set_draw_color(sdl2::pixels::Color::RGB(100, 100, 100));
-    // canvas.clear()
-    // canvas.present();
-
     let mut event_pump = sdl_context.event_pump().unwrap();
+
     'running: loop {
         for event in event_pump.poll_iter() {
-            if !engine.input(&event) {
-                match event {
-                    Event::Quit { .. }
-                    | Event::KeyDown {
-                        keycode: Some(Keycode::Escape),
-                        ..
-                    } => break 'running,
-                    Event::Window {
-                        win_event: WindowEvent::Resized(width, height),
-                        ..
-                    } => engine.resize((width as u32, height as u32)),
-                    _ => {}
-                }
+            match event {
+                Event::Quit { .. }
+                | Event::KeyDown {
+                    keycode: Some(Keycode::Escape),
+                    ..
+                } => break 'running,
+                Event::Window {
+                    win_event: WindowEvent::Resized(width, height),
+                    ..
+                } => engine.resize((width as u32, height as u32)),
+                _ => {}
             }
-            engine.update();
-            match engine.render() {
-                Ok(_) => {}
-                Err(wgpu::SurfaceError::Lost) => engine.resize(engine.size),
-                Err(wgpu::SurfaceError::OutOfMemory) => break 'running,
-                Err(e) => eprintln!("{:?}", e),
-            }
-            ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
         }
+        let scancodes = event_pump
+            .keyboard_state()
+            .pressed_scancodes()
+            .collect::<Vec<_>>();
+        let mouse_state = event_pump.mouse_state();
+        engine.input(&scancodes, &mouse_state);
+        engine.update();
+        engine.frame_number += 1;
+        match engine.render() {
+            Ok(_) => {}
+            Err(wgpu::SurfaceError::Lost) => engine.resize(engine.size),
+            Err(wgpu::SurfaceError::OutOfMemory) => break 'running,
+            Err(e) => eprintln!("{:?}", e),
+        }
+        ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
     }
 }
