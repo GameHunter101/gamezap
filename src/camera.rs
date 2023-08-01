@@ -142,17 +142,20 @@ impl Camera {
 #[repr(C)]
 #[derive(Debug, Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct CameraUniform {
+    pub view_pos: [f32; 4],
     pub view_proj: [[f32; 4]; 4],
 }
 
 impl CameraUniform {
     pub fn new() -> Self {
         CameraUniform {
+            view_pos: [0.0; 4],
             view_proj: na::Matrix4::identity().into(),
         }
     }
 
     pub fn update_view_proj(&mut self, camera: &mut Camera) {
+        self.view_pos = camera.position.to_homogeneous().into();
         self.view_proj = camera.build_view_projection_matrix().into();
     }
 }
