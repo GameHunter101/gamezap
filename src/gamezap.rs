@@ -20,6 +20,8 @@ pub async fn run() {
         .build()
         .unwrap();
 
+    sdl_context.mouse().set_relative_mouse_mode(true);
+
     let mut engine = Engine::new(&window).await;
 
     let mut event_pump = sdl_context.event_pump().unwrap();
@@ -27,15 +29,14 @@ pub async fn run() {
     'running: loop {
         for event in event_pump.poll_iter() {
             match event {
-                Event::Quit { .. }
-                | Event::KeyDown {
-                    keycode: Some(Keycode::Escape),
-                    ..
-                } => break 'running,
+                Event::Quit { .. } => break 'running,
                 Event::Window {
                     win_event: WindowEvent::Resized(width, height),
                     ..
                 } => engine.resize((width as u32, height as u32)),
+                Event::KeyDown {keycode: Some(Keycode::Escape),..} => {
+                    sdl_context.mouse().set_relative_mouse_mode(!engine.relative_mouse);
+                }
                 _ => {}
             }
         }
@@ -43,9 +44,9 @@ pub async fn run() {
             .keyboard_state()
             .pressed_scancodes()
             .collect::<Vec<_>>();
-        let mouse_state = event_pump.mouse_state();
+        let mouse_state = event_pump.relative_mouse_state();
         engine.input(&scancodes, &mouse_state);
-        engine.update();
+        engine.update(&sdl_context);
         engine.frame_number += 1;
         match engine.render() {
             Ok(_) => {}

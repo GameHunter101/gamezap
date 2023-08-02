@@ -17,6 +17,7 @@ anyhow = "1.0.72"
 nalgebra = "0.32.3"
 tobj = { version = "4.0.0", features = ["async"] }
 cfg-if = "1.0.0"
+instant = "0.1.12"
 
 [build-dependencies]
 anyhow = "1.0.72"

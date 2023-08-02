@@ -1,5 +1,5 @@
 use nalgebra as na;
-use sdl2::{keyboard::Scancode, mouse::MouseState, video::Window};
+use sdl2::{keyboard::Scancode, mouse::RelativeMouseState, video::Window};
 use wgpu::util::DeviceExt;
 
 use crate::{
@@ -57,8 +57,6 @@ pub struct Engine<'a> {
     pub size: (u32, u32),
     window: &'a Window,
     render_pipeline: wgpu::RenderPipeline,
-    diffuse_bind_group: wgpu::BindGroup,
-    diffuse_texture: Texture,
     camera: Camera,
     camera_uniform: CameraUniform,
     camera_buffer: wgpu::Buffer,
@@ -73,6 +71,7 @@ pub struct Engine<'a> {
     light_buffer: wgpu::Buffer,
     light_bind_group: wgpu::BindGroup,
     light_pipeline: wgpu::RenderPipeline,
+    pub relative_mouse: bool,
 }
 
 impl<'a> Engine<'a> {
@@ -126,10 +125,6 @@ impl<'a> Engine<'a> {
         };
         surface.configure(&device, &config);
 
-        let diffuse_bytes = include_bytes!(".././images/dude.png");
-        let diffuse_texture =
-            Texture::from_bytes(&device, &queue, diffuse_bytes, "dude.png").unwrap();
-
         let texture_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 label: Some("texture_bind_group_layout"),
@@ -150,30 +145,30 @@ impl<'a> Engine<'a> {
                         ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
                         count: None,
                     },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 2,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            multisampled: false,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 3,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
+                    },
                 ],
             });
 
-        let diffuse_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("diffuse_bind_group"),
-            layout: &texture_bind_group_layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: wgpu::BindingResource::TextureView(&diffuse_texture.view),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 1,
-                    resource: wgpu::BindingResource::Sampler(&diffuse_texture.sampler),
-                },
-            ],
-        });
-
         let mut camera = Camera {
             position: na::Vector3::new(0.0, 0.0, -2.0),
-            screen_up: na::Unit::new_normalize(na::Vector3::new(0.0, -1.0, 0.0)),
-            screen_right: na::Unit::new_normalize(na::Vector3::new(-1.0, 0.0, 0.0)),
+            screen_right: na::Unit::new_normalize(na::Vector3::new(1.0, 0.0, 0.0)),
             view_matrix: na::Matrix4::identity(),
-            rotation_matrix: na::Matrix3::identity(),
+            rotation_matrix: na::Matrix4::identity(),
             pitch: 0.0,
             yaw: 0.0,
             aspect: config.width as f32 / config.height as f32,
@@ -181,8 +176,7 @@ impl<'a> Engine<'a> {
             znear: 0.1,
             zfar: 100.0,
             distance: 0.1,
-            last_mouse_pos: None,
-            sensitivity: 0.01,
+            sensitivity: 0.007,
         };
 
         let mut camera_uniform = CameraUniform::new();
@@ -344,8 +338,6 @@ impl<'a> Engine<'a> {
             size,
             window,
             render_pipeline,
-            diffuse_bind_group,
-            diffuse_texture,
             camera,
             camera_uniform,
             camera_buffer,
@@ -360,6 +352,7 @@ impl<'a> Engine<'a> {
             light_buffer,
             light_bind_group,
             light_pipeline,
+            relative_mouse: true,
         }
     }
 
@@ -378,11 +371,13 @@ impl<'a> Engine<'a> {
         }
     }
 
-    pub fn input(&mut self, scancodes: &Vec<Scancode>, mouse_state: &MouseState) {
-        self.camera.transform_camera(scancodes, mouse_state);
+    pub fn input(&mut self, scancodes: &Vec<Scancode>, mouse_state: &RelativeMouseState) {
+        self.camera.transform_camera(scancodes, mouse_state, self.relative_mouse);
     }
+    
+    pub fn update(&mut self, sdl_context: &sdl2::Sdl) {
+        self.relative_mouse = sdl_context.mouse().relative_mouse_mode();
 
-    pub fn update(&mut self) {
         self.camera_uniform.update_view_proj(&mut self.camera);
         self.queue.write_buffer(
             &self.camera_buffer,
